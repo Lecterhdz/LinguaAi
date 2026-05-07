@@ -3,67 +3,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - LinguaAI</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Admin Panel - LinguaAI Pro</title>
     <style>
-        .admin-container { max-width: 1200px; margin: 2rem auto; padding: 2rem; }
-        .license-list { background: var(--bg-secondary); border-radius: 16px; padding: 1rem; }
-        .license-item { display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--border); }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .stat-card { background: var(--bg-secondary); padding: 1rem; border-radius: 12px; }
-        input, button { padding: 0.5rem; margin: 0.5rem; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            color: #888;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #00d4ff;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+        
+        .stat-label {
+            color: #888;
+            margin-top: 0.5rem;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card h2 {
+            margin-bottom: 1rem;
+            color: #00d4ff;
+        }
+        
+        input, select, button {
+            padding: 0.75rem;
+            margin: 0.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        input {
+            width: 300px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        th {
+            color: #00d4ff;
+        }
+        
+        .badge-pro {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .badge-demo {
+            background: rgba(0, 212, 255, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        
+        .badge-expired {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff4444;
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        
+        .delete-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: #ff4444;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        .delete-btn:hover {
+            background: #ff4444;
+        }
+        
+        .generated-key {
+            background: #0a0a0a;
+            padding: 1rem;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            border: 1px solid #00d4ff;
+        }
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <h1>🔐 Admin Panel - LinguaAI</h1>
-        <div class="stats-grid" id="stats"></div>
+        <h1>🛡️ LinguaAI Admin Panel</h1>
+        <p class="subtitle">Gestión de licencias PRO y usuarios</p>
+        
+        <div class="stats-grid" id="statsGrid"></div>
+        
         <div class="card">
-            <h2>Generar Licencia Pro</h2>
-            <input type="text" id="newLicenseEmail" placeholder="Email del usuario">
-            <button onclick="generateLicense()">Generar Licencia</button>
-            <pre id="generatedLicense"></pre>
+            <h2>🎁 Generar Licencia PRO</h2>
+            <input type="email" id="licenseEmail" placeholder="Email del usuario" required>
+            <select id="licenseDuration">
+                <option value="30">30 días (1 mes)</option>
+                <option value="90">90 días (3 meses)</option>
+                <option value="180">180 días (6 meses)</option>
+                <option value="365">365 días (1 año)</option>
+            </select>
+            <button onclick="generateLicense()">✨ Generar Licencia</button>
+            <div id="generatedLicense" class="generated-key" style="display: none;"></div>
         </div>
-        <div class="license-list">
-            <h2>Licencias Activas</h2>
-            <div id="licenses"></div>
+        
+        <div class="card">
+            <h2>📋 Licencias Activas</h2>
+            <div style="overflow-x: auto;">
+                <table id="licensesTable">
+                    <thead>
+                        <tr><th>Código</th><th>Email</th><th>Tipo</th><th>Estado</th><th>Expira</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody id="licensesList"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>🔧 Acciones Rápidas</h2>
+            <button onclick="exportData()">📥 Exportar Datos</button>
+            <button onclick="clearAllDemo()" style="background: rgba(255,0,0,0.5);">⚠️ Limpiar Usuarios Demo</button>
+            <button onclick="location.reload()">🔄 Recargar</button>
         </div>
     </div>
-    <script src="js/auth.js"></script>
+    
     <script>
+        // Verificar acceso admin
         if (!window.location.search.includes('admin=true')) {
-            alert('Acceso denegado. Usa ?admin=true en la URL');
+            alert('🔐 Acceso denegado. Esta área es solo para administradores.');
             window.location.href = '/';
         }
         
-        function generateLicense() {
-            const email = document.getElementById('newLicenseEmail').value;
-            if (!email) return alert('Email requerido');
-            const license = 'LG-' + Math.random().toString(36).substr(2, 16).toUpperCase();
-            let licenses = JSON.parse(localStorage.getItem('lingua_licenses') || '{}');
-            licenses[license] = { email, activated: false, createdAt: Date.now() };
-            localStorage.setItem('lingua_licenses', JSON.stringify(licenses));
-            document.getElementById('generatedLicense').innerText = `Licencia: ${license}\nEmail: ${email}`;
-            loadLicenses();
+        // Cargar estadísticas
+        function loadStats() {
+            const licenses = JSON.parse(localStorage.getItem('lingua_licenses') || '{}');
+            const users = Object.values(licenses);
+            
+            const total = users.length;
+            const proActive = users.filter(u => u.type === 'pro' && u.activated && (!u.expiresAt || Date.now() < u.expiresAt)).length;
+            const expired = users.filter(u => u.expiresAt && Date.now() > u.expiresAt).length;
+            const demo = users.filter(u => u.type === 'demo').length;
+            
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total Licencias</div></div>
+                <div class="stat-card"><div class="stat-value">${proActive}</div><div class="stat-label">Usuarios PRO Activos</div></div>
+                <div class="stat-card"><div class="stat-value">${expired}</div><div class="stat-label">Licencias Expiradas</div></div>
+                <div class="stat-card"><div class="stat-value">${demo}</div><div class="stat-label">Usuarios Demo</div></div>
+            `;
+            
+            // Cargar tabla
+            const tbody = document.getElementById('licensesList');
+            tbody.innerHTML = '';
+            
+            for (const [code, data] of Object.entries(licenses)) {
+                const isExpired = data.expiresAt && Date.now() > data.expiresAt;
+                const expiresDate = data.expiresAt ? new Date(data.expiresAt).toLocaleDateString() : 'Nunca';
+                const status = data.activated ? (isExpired ? 'Expirada' : 'Activa') : 'Sin activar';
+                
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td><code style="font-size:0.8rem">${code}</code></td>
+                    <td>${data.email}</td>
+                    <td><span class="${data.type === 'pro' ? 'badge-pro' : 'badge-demo'}">${data.type === 'pro' ? '💎 PRO' : '📘 Demo'}</span></td>
+                    <td style="color: ${isExpired ? '#ff4444' : '#00ff00'}">${status}</td>
+                    <td>${expiresDate}</td>
+                    <td><button class="delete-btn" onclick="deleteLicense('${code}')">🗑️</button></td>
+                `;
+            }
         }
         
-        function loadLicenses() {
-            const licenses = JSON.parse(localStorage.getItem('lingua_licenses') || '{}');
-            const container = document.getElementById('licenses');
-            container.innerHTML = Object.entries(licenses).map(([code, data]) => `
-                <div class="license-item">
-                    <strong>${code}</strong> - ${data.email} - ${data.activated ? '✅ Activada' : '⏳ Sin activar'}
-                </div>
-            `).join('');
+        // Generar licencia
+        function generateLicense() {
+            const email = document.getElementById('licenseEmail').value;
+            const duration = parseInt(document.getElementById('licenseDuration').value);
             
-            const activeUsers = Object.values(licenses).filter(l => l.activated).length;
-            document.getElementById('stats').innerHTML = `
-                <div class="stat-card">📊 Total Licencias: ${Object.keys(licenses).length}</div>
-                <div class="stat-card">👥 Usuarios Activos: ${activeUsers}</div>
-                <div class="stat-card">🎯 Demo Usuarios: Estimado 50+</div>
+            if (!email || !email.includes('@')) {
+                alert('❌ Ingresa un email válido');
+                return;
+            }
+            
+            const prefix = 'LG';
+            const random = Math.random().toString(36).substring(2, 10).toUpperCase();
+            const random2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const licenseCode = `${prefix}-${random}-${random2}`;
+            
+            const licenses = JSON.parse(localStorage.getItem('lingua_licenses') || '{}');
+            licenses[licenseCode] = {
+                email: email,
+                activated: false,
+                type: 'pro',
+                createdAt: Date.now(),
+                expiresAt: Date.now() + (duration * 24 * 60 * 60 * 1000),
+                durationDays: duration
+            };
+            localStorage.setItem('lingua_licenses', JSON.stringify(licenses));
+            
+            const generatedDiv = document.getElementById('generatedLicense');
+            generatedDiv.innerHTML = `
+                ✅ Licencia Generada<br>
+                <strong style="font-size:1.3rem; color:#00d4ff;">${licenseCode}</strong><br>
+                Email: ${email} | Duración: ${duration} días<br>
+                <button onclick="copyToClipboard('${licenseCode}')" style="margin-top:0.5rem;">📋 Copiar</button>
             `;
+            generatedDiv.style.display = 'block';
+            
+            loadStats();
+            
+            setTimeout(() => {
+                generatedDiv.style.display = 'none';
+            }, 10000);
         }
-        loadLicenses();
+        
+        // Copiar al portapapeles
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            alert('✅ Código copiado: ' + text);
+        }
+        
+        // Eliminar licencia
+        function deleteLicense(code) {
+            if (confirm(`¿Eliminar la licencia ${code}? Esta acción no se puede deshacer.`)) {
+                const licenses = JSON.parse(localStorage.getItem('lingua_licenses') || '{}');
+                delete licenses[code];
+                localStorage.setItem('lingua_licenses', JSON.stringify(licenses));
+                loadStats();
+                alert('✅ Licencia eliminada');
+            }
+        }
+        
+        // Exportar datos
+        function exportData() {
+            const licenses = JSON.parse(localStorage.getItem('lingua_licenses') || '{}');
+            const dataStr = JSON.stringify(licenses, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `linguai_licenses_${new Date().toISOString()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Limpiar usuarios demo
+        function clearAllDemo() {
+            if (confirm('⚠️ ¿Eliminar TODOS los usuarios demo? Los usuarios PRO no se verán afectados.')) {
+                const licenses = JSON.parse(localStorage.getItem('lingua_licenses') || '{}');
+                const newLicenses = {};
+                for (const [code, data] of Object.entries(licenses)) {
+                    if (data.type === 'pro') {
+                        newLicenses[code] = data;
+                    }
+                }
+                localStorage.setItem('lingua_licenses', JSON.stringify(newLicenses));
+                loadStats();
+                alert('✅ Usuarios demo eliminados');
+            }
+        }
+        
+        // Inicializar
+        loadStats();
     </script>
 </body>
 </html>
