@@ -331,3 +331,54 @@ textarea {
         height: 44px;
     }
 }
+/* Añadir a style.css */
+.message {
+    max-width: 85%;
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    animation: fadeIn 0.3s ease;
+    margin-bottom: 0.5rem;
+}
+
+.message.ai {
+    align-self: flex-start;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(124, 58, 237, 0.1));
+    border-left: 3px solid var(--neon-blue);
+}
+
+.message.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+    color: white;
+}
+
+.message.system {
+    align-self: center;
+    background: rgba(255, 193, 7, 0.2);
+    border: 1px solid #ffc107;
+    font-size: 0.85rem;
+    max-width: 90%;
+}
+
+.message.typing {
+    background: rgba(0, 212, 255, 0.05);
+}
+
+.dots {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+}
+
+.message-content {
+    margin-top: 0.25rem;
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.voice-status {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    text-align: center;
+    min-height: 24px;
+}
