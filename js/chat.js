@@ -87,14 +87,51 @@ class LinguaAIChat {
         if (window.speechSynthesis) {
             const setVoices = () => {
                 const voices = window.speechSynthesis.getVoices();
-                // Buscar voz femenina en español/inglés
-                this.voice = voices.find(v => 
-                    (v.lang.includes('es') && (v.name.includes('Mónica') || v.name.includes('Google') || v.name.includes('es-ES')))
-                ) || voices.find(v => 
-                    v.lang.includes('en') && (v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Female'))
-                ) || voices[0];
+                console.log('Voces disponibles:', voices.map(v => `${v.name} (${v.lang}) - ${v.gender || 'unknown'}`));
+                
+                // Lista prioritaria de voces femeninas
+                const femaleVoices = [
+                    // Español - voces femeninas
+                    { name: 'Google español', lang: 'es-ES', keywords: ['Google', 'español', 'Mónica', 'Paulina', 'Mia'] },
+                    // Inglés - voces femeninas  
+                    { name: 'Google UK English Female', lang: 'en-GB', keywords: ['Google', 'UK English Female', 'Samantha', 'Victoria', 'Female'] },
+                    { name: 'Google US English Female', lang: 'en-US', keywords: ['Google', 'US English Female', 'Female'] },
+                    // Genéricas
+                    { name: 'Microsoft Sabina', lang: 'es-MX', keywords: ['Sabina', 'Dalia', 'Microsoft'] },
+                    { name: 'Microsoft Zira', lang: 'en-US', keywords: ['Zira', 'Microsoft', 'Female'] }
+                ];
+                
+                // Buscar voz femenina
+                for (const target of femaleVoices) {
+                    const found = voices.find(v => 
+                        target.keywords.some(keyword => v.name.includes(keyword)) &&
+                        (v.lang.includes('es') || v.lang.includes('en'))
+                    );
+                    if (found) {
+                        this.voice = found;
+                        console.log('✅ Voz femenina seleccionada:', this.voice.name);
+                        break;
+                    }
+                }
+                
+                // Fallback: buscar cualquier voz con "female" en el nombre
+                if (!this.voice) {
+                    this.voice = voices.find(v => 
+                        v.name.toLowerCase().includes('female') || 
+                        v.name.toLowerCase().includes('mujer') ||
+                        v.name.toLowerCase().includes('samantha')
+                    );
+                }
+                
+                // Último recurso: primera voz disponible
+                if (!this.voice && voices.length > 0) {
+                    this.voice = voices[0];
+                    console.log('⚠️ Usando voz por defecto:', this.voice.name);
+                }
             };
+            
             setVoices();
+            // Algunos navegadores cargan voces después
             window.speechSynthesis.onvoiceschanged = setVoices;
         }
     }
@@ -154,42 +191,96 @@ class LinguaAIChat {
     }
 
     getFallbackResponse(text, language) {
-        const lowerText = text.toLowerCase();
+        const lowerText = text.toLowerCase().trim();
+        console.log(`🔍 Procesando: "${lowerText}" en ${language}`);
         
-        // Respuestas inteligentes para modo demo
+        // Respuestas más inteligentes por idioma
         const responses = {
             Spanish: {
-                greetings: ["¡Hola! ¿Cómo estás?", "¡Buenos días! ¿Listo para practicar?", "¡Hola! ¿Qué tal?"],
-                howAreYou: ["¡Muy bien! Gracias por preguntar. ¿Y tú?", "Excelente, gracias. ¿Cómo va tu día?"],
-                practice: ["¡Genial! Practiquemos vocabulario básico. ¿Qué temas te interesan?", "Perfecto. Vamos a aprender frases útiles."],
-                goodbye: ["¡Hasta luego! Sigue practicando.", "¡Nos vemos! Recuerda practicar todos los días."],
-                default: `📚 ¡Buena práctica! "${text}" está bien. ¿Quieres aprender más sobre ${language}?`
+                greetings: ['hola', 'buenos dias', 'buenas tardes', 'qué tal', 'hey', 'saludos'],
+                howAreYou: ['cómo estás', 'como estas', 'cómo te va', 'que tal', 'como andas'],
+                name: ['cómo te llamas', 'tu nombre', 'quien eres', 'quién eres'],
+                practice: ['practicar', 'vocabulario', 'gramática', 'ejercicio', 'aprender', 'estudiar'],
+                goodbye: ['adiós', 'chao', 'hasta luego', 'nos vemos', 'bye'],
+                thanks: ['gracias', 'thank you', 'merci', 'danke'],
+                weather: ['clima', 'tiempo', 'hace calor', 'hace frío'],
+                help: ['ayuda', 'help', 'que puedes hacer', 'funciones']
             },
             English: {
-                greetings: ["Hello! How are you today?", "Hi there! Ready to practice?", "Hey! Great to see you!"],
-                howAreYou: ["I'm doing great! Thanks for asking. How about you?", "Excellent! Ready to learn some English?"],
-                practice: ["Awesome! Let's practice some basic vocabulary. What topics interest you?", "Perfect. Let's learn useful phrases."],
-                goodbye: ["Goodbye! Keep practicing!", "See you later! Practice every day!"],
-                default: `📚 Great practice! "${text}" is good. Would you like to learn more ${language}?`
+                greetings: ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'greetings'],
+                howAreYou: ['how are you', "what's up", 'how do you do', 'how is it going', 'how are ya'],
+                name: ['what is your name', 'who are you', 'your name', 'call you'],
+                practice: ['practice', 'vocabulary', 'grammar', 'exercise', 'learn', 'study'],
+                goodbye: ['goodbye', 'bye', 'see you', 'farewell', 'good night'],
+                thanks: ['thanks', 'thank you', 'appreciate'],
+                weather: ['weather', 'temperature', 'hot', 'cold', 'rain'],
+                help: ['help', 'what can you do', 'features', 'commands']
             }
         };
         
-        const r = responses[language] || responses.Spanish;
+        const langResponses = responses[language] || responses.English;
         
-        if (/(hola|hello|hi|hey)/i.test(text)) {
-            return r.greetings[Math.floor(Math.random() * r.greetings.length)];
-        }
-        if (/(cómo estás|how are you|como estas)/i.test(text)) {
-            return r.howAreYou[Math.floor(Math.random() * r.howAreYou.length)];
-        }
-        if (/(adiós|bye|goodbye|chao|nos vemos)/i.test(text)) {
-            return r.goodbye[Math.floor(Math.random() * r.goodbye.length)];
-        }
-        if (/(practicar|learn|practice|vocabulario)/i.test(text)) {
-            return r.practice[Math.floor(Math.random() * r.practice.length)];
+        // Función para detectar patrones
+        const detectPattern = (patterns) => {
+            return patterns.some(pattern => lowerText.includes(pattern));
+        };
+        
+        // Detectar tipo de mensaje
+        if (detectPattern(langResponses.greetings)) {
+            const replies = {
+                Spanish: ['¡Hola! ¿Cómo estás? ¡Qué gusto verte por aquí! 🌟', '¡Bienvenido/a! ¿Listo para practicar español? 😊', '¡Hola! ¿Qué tal? Vamos a aprender juntos. 📚'],
+                English: ['Hello! How are you today? Great to see you! 🌟', 'Hi there! Ready to practice English? 😊', 'Hey! How can I help you learn today? 📚']
+            };
+            return replies[language]?.[Math.floor(Math.random() * 3)] || replies.English[0];
         }
         
-        return r.default;
+        if (detectPattern(langResponses.howAreYou)) {
+            const replies = {
+                Spanish: ['¡Muy bien! Gracias por preguntar. Estoy emocionada de ayudarte con tu español. ¿Y tú cómo estás? 😊', '¡Excelente! Siempre feliz de practicar idiomas. ¿Cómo va tu día? 🌟'],
+                English: ["I'm doing great! Thanks for asking. I'm excited to help you with your English. How about you? 😊", "Excellent! Always happy to practice languages. How's your day going? 🌟"]
+            };
+            return replies[language]?.[0] || replies.English[0];
+        }
+        
+        if (detectPattern(langResponses.name)) {
+            const replies = {
+                Spanish: ['¡Soy LinguaAI! Tu tutora personal de idiomas con inteligencia artificial. Puedes llamarme Lingua. 🎧', 'Soy LinguaAI, creada para ayudarte a aprender idiomas de forma divertida. ¿En qué puedo ayudarte? ✨'],
+                English: ["I'm LinguaAI! Your personal AI language tutor with a friendly voice. You can call me Lingua. 🎧", "I'm LinguaAI, created to help you learn languages in a fun way. How can I help you? ✨"]
+            };
+            return replies[language]?.[0] || replies.English[0];
+        }
+        
+        if (detectPattern(langResponses.thanks)) {
+            const replies = {
+                Spanish: ['¡De nada! Es un placer ayudarte a aprender. ¿Qué más quieres practicar? 😊', '¡Para eso estoy! Sigue así, vas muy bien. 🎯'],
+                English: ["You're welcome! It's a pleasure helping you learn. What else would you like to practice? 😊", "That's what I'm here for! Keep it up, you're doing great. 🎯"]
+            };
+            return replies[language]?.[0] || replies.English[0];
+        }
+        
+        if (detectPattern(langResponses.goodbye)) {
+            const replies = {
+                Spanish: ['¡Hasta luego! Sigue practicando todos los días. ¡Nos vemos pronto! 👋', '¡Adiós! Recuerda que la práctica hace al maestro. ¡Vuelve pronto! 🌟'],
+                English: ["Goodbye! Keep practicing every day. See you soon! 👋", "Bye! Remember that practice makes perfect. Come back soon! 🌟"]
+            };
+            return replies[language]?.[0] || replies.English[0];
+        }
+        
+        if (detectPattern(langResponses.practice)) {
+            const replies = {
+                Spanish: ['¡Genial! Podemos practicar:\n📚 Vocabulario básico\n💬 Frases comunes\n🎭 Conversación simulada\n🗣️ Pronunciación\n\n¿Qué prefieres?', 'Excelente elección. ¿Te gustaría empezar con saludos, números o frases útiles para viajar? ✈️'],
+                English: ["Great! We can practice:\n📚 Basic vocabulary\n💬 Common phrases\n🎭 Simulated conversation\n🗣️ Pronunciation\n\nWhat would you prefer?", "Excellent choice. Would you like to start with greetings, numbers, or useful travel phrases? ✈️"]
+            };
+            return replies[language]?.[0] || replies.English[0];
+        }
+        
+        // Respuesta personalizada basada en el mensaje del usuario
+        const personalizedReplies = {
+            Spanish: `¡Excelente mensaje! "${text}" está muy bien escrito en español. ¿Quieres que te ayude con más vocabulario relacionado o prefieres practicar conversación? 🎯`,
+            English: `Great message! "${text}" is well written in English. Would you like help with more related vocabulary or prefer to practice conversation? 🎯`
+        };
+        
+        return personalizedReplies[language] || personalizedReplies.English;
     }
 
     async sendMessage(userText, language) {
@@ -264,13 +355,14 @@ class LinguaAIChat {
         return div.innerHTML;
     }
 
-    async speak(text, language) {
-        return new Promise((resolve) => {
-            if (!window.speechSynthesis) {
-                resolve();
-                return;
-            }
-            
+async speak(text, language) {
+    return new Promise((resolve) => {
+        if (!window.speechSynthesis) {
+            resolve();
+            return;
+        }
+        
+        try {
             window.speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(text);
@@ -284,27 +376,28 @@ class LinguaAIChat {
             };
             utterance.lang = langMap[language] || 'es-ES';
             utterance.rate = 0.95;
-            utterance.pitch = 1.2;
+            utterance.pitch = 1.3; // Más agudo = más femenino
             utterance.volume = 1;
             
+            // Forzar voz femenina guardada
             if (this.voice) {
                 utterance.voice = this.voice;
+                console.log('🎤 Usando voz:', this.voice.name);
             }
             
             utterance.onend = () => resolve();
-            utterance.onerror = () => resolve();
+            utterance.onerror = (e) => {
+                console.error('Error al hablar:', e);
+                resolve();
+            };
             
             window.speechSynthesis.speak(utterance);
-        });
-    }
-
-    saveHistory() {
-        const user = window.auth?.getCurrentUser();
-        if (user) {
-            const history = this.messages.slice(-50);
-            localStorage.setItem(`chat_history_${user.license}`, JSON.stringify(history));
+        } catch (e) {
+            console.error('Error en speak:', e);
+            resolve();
         }
-    }
+    });
+}
 
     loadHistory() {
         const user = window.auth?.getCurrentUser();
