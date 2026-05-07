@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - LinguaAI</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-container { max-width: 1200px; margin: 2rem auto; padding: 2rem; }
+        .license-list { background: var(--bg-secondary); border-radius: 16px; padding: 1rem; }
+        .license-item { display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--border); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--bg-secondary); padding: 1rem; border-radius: 12px; }
+        input, button { padding: 0.5rem; margin: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <h1>🔐 Admin Panel - LinguaAI</h1>
+        <div class="stats-grid" id="stats"></div>
+        <div class="card">
+            <h2>Generar Licencia Pro</h2>
+            <input type="text" id="newLicenseEmail" placeholder="Email del usuario">
+            <button onclick="generateLicense()">Generar Licencia</button>
+            <pre id="generatedLicense"></pre>
+        </div>
+        <div class="license-list">
+            <h2>Licencias Activas</h2>
+            <div id="licenses"></div>
+        </div>
+    </div>
+    <script src="js/auth.js"></script>
+    <script>
+        if (!window.location.search.includes('admin=true')) {
+            alert('Acceso denegado. Usa ?admin=true en la URL');
+            window.location.href = '/';
+        }
+        
+        function generateLicense() {
+            const email = document.getElementById('newLicenseEmail').value;
+            if (!email) return alert('Email requerido');
+            const license = 'LG-' + Math.random().toString(36).substr(2, 16).toUpperCase();
+            let licenses = JSON.parse(localStorage.getItem('lingua_licenses') || '{}');
+            licenses[license] = { email, activated: false, createdAt: Date.now() };
+            localStorage.setItem('lingua_licenses', JSON.stringify(licenses));
+            document.getElementById('generatedLicense').innerText = `Licencia: ${license}\nEmail: ${email}`;
+            loadLicenses();
+        }
+        
+        function loadLicenses() {
+            const licenses = JSON.parse(localStorage.getItem('lingua_licenses') || '{}');
+            const container = document.getElementById('licenses');
+            container.innerHTML = Object.entries(licenses).map(([code, data]) => `
+                <div class="license-item">
+                    <strong>${code}</strong> - ${data.email} - ${data.activated ? '✅ Activada' : '⏳ Sin activar'}
+                </div>
+            `).join('');
+            
+            const activeUsers = Object.values(licenses).filter(l => l.activated).length;
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card">📊 Total Licencias: ${Object.keys(licenses).length}</div>
+                <div class="stat-card">👥 Usuarios Activos: ${activeUsers}</div>
+                <div class="stat-card">🎯 Demo Usuarios: Estimado 50+</div>
+            `;
+        }
+        loadLicenses();
+    </script>
+</body>
+</html>
