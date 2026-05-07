@@ -28,16 +28,106 @@ class AuthSystem {
                     type: 'demo',
                     createdAt: Date.now()
                 },
-                // Licencia Pro para pruebas
+                // Licencia Pro para pruebas - ¡AHORA SÍ FUNCIONA!
                 'PRO-TEST-2024': { 
                     email: 'test@linguai.com', 
                     activated: false, 
                     type: 'pro',
-                    createdAt: Date.now()
+                    createdAt: Date.now(),
+                    expiresAt: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 año
+                    durationDays: 365
+                },
+                // Licencia Pro adicional para pruebas
+                'LG-PRO-2024': { 
+                    email: 'pro@linguai.com', 
+                    activated: false, 
+                    type: 'pro',
+                    createdAt: Date.now(),
+                    expiresAt: Date.now() + (90 * 24 * 60 * 60 * 1000), // 90 días
+                    durationDays: 90
+                },
+                // Licencia Premium
+                'PREMIUM-2024': { 
+                    email: 'premium@linguai.com', 
+                    activated: false, 
+                    type: 'pro',
+                    createdAt: Date.now(),
+                    expiresAt: Date.now() + (180 * 24 * 60 * 60 * 1000), // 180 días
+                    durationDays: 180
                 }
             };
             localStorage.setItem(this.licensesKey, JSON.stringify(defaultLicenses));
+            console.log('✅ Licencias inicializadas:', Object.keys(defaultLicenses));
+        } else {
+            // Verificar si faltan licencias y agregarlas
+            const current = JSON.parse(localStorage.getItem(this.licensesKey));
+            const neededLicenses = ['PRO-TEST-2024', 'LG-PRO-2024', 'PREMIUM-2024'];
+            let updated = false;
+            
+            for (const license of neededLicenses) {
+                if (!current[license]) {
+                    current[license] = {
+                        email: `${license.toLowerCase()}@linguai.com`,
+                        activated: false,
+                        type: 'pro',
+                        createdAt: Date.now(),
+                        expiresAt: Date.now() + (365 * 24 * 60 * 60 * 1000),
+                        durationDays: 365
+                    };
+                    updated = true;
+                    console.log(`✅ Licencia añadida: ${license}`);
+                }
+            }
+            
+            if (updated) {
+                localStorage.setItem(this.licensesKey, JSON.stringify(current));
+            }
         }
+    }
+    
+    // Mejorar loginWithLicense para dar más información
+    loginWithLicense(licenseCode) {
+        console.log(`🔐 Intentando login con licencia: ${licenseCode}`);
+        
+        const licenses = JSON.parse(localStorage.getItem(this.licensesKey));
+        const license = licenses[licenseCode];
+        
+        if (!license) {
+            console.error(`❌ Licencia no encontrada: ${licenseCode}`);
+            console.log('Licencias disponibles:', Object.keys(licenses));
+            return { success: false, error: `❌ Licencia inválida: "${licenseCode}" no existe. Usa: DEMO-1234-5678, PRO-TEST-2024, DEMO-FREE-TRIAL` };
+        }
+        
+        // Verificar expiración
+        if (license.type === 'pro' && license.expiresAt && Date.now() > license.expiresAt) {
+            console.error(`❌ Licencia expirada: ${licenseCode}`);
+            return { success: false, error: '❌ Licencia expirada. Contacta con soporte para renovar.' };
+        }
+        
+        const today = new Date().toDateString();
+        
+        const user = {
+            license: licenseCode,
+            email: license.email,
+            isPro: license.type === 'pro',
+            loginTime: Date.now(),
+            messagesToday: 0,
+            lastReset: today
+        };
+        
+        // Marcar licencia como activada
+        license.activated = true;
+        license.lastUsed = Date.now();
+        localStorage.setItem(this.licensesKey, JSON.stringify(licenses));
+        localStorage.setItem(this.storageKey, JSON.stringify(user));
+        
+        console.log(`✅ Login exitoso: ${licenseCode} (${license.type})`);
+        
+        return { 
+            success: true, 
+            user,
+            message: license.type === 'pro' ? '🎉 ¡Bienvenido a LinguaAI PRO! Mensajes ilimitados.' : '📘 Modo Demo activado. 10 mensajes/día.'
+        };
     }
 
     // Verificar y resetear contadores diarios
