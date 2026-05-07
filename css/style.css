@@ -397,3 +397,65 @@ textarea {
     font-weight: bold;
     font-size: 1rem;
 }
+/* Animaciones para la app */
+@keyframes slideInUp {
+    from {
+        transform: translateX(-50%) translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+.toast {
+    animation: slideInUp 0.3s ease;
+}
+
+.language-notification {
+    animation: fadeInOut 2s ease;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+}
+
+/* Botón de instalación flotante */
+.install-btn {
+    animation: pulse 2s infinite;
+}
+
+/* Scrollbar personalizado */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(0, 212, 255, 0.5);
+    border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 212, 255, 0.8);
+}
+
+/* Efecto de carga para los mensajes */
+.message {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Indicador de escritura */
+.message.typing .dots {
+    display: inline-block;
+    min-width: 30px;
+    letter-spacing: 2px;
+}
