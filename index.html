@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>LinguaAI - Tu tutor inteligente</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header con hamburguesa -->
+        <header class="glass-header">
+            <button class="hamburger" id="hamburgerBtn" aria-label="Menú">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="logo">
+                <span class="logo-icon">🧠</span>
+                <span class="logo-text">Lingua<span class="ai-glow">AI</span></span>
+                <span class="badge-demo" id="versionBadge">DEMO</span>
+            </div>
+            <button class="theme-toggle" id="themeToggle" aria-label="Modo claro/oscuro">🌙</button>
+        </header>
+
+        <!-- Menú hamburguesa lateral -->
+        <div class="menu-overlay" id="menuOverlay"></div>
+        <nav class="side-menu" id="sideMenu">
+            <div class="menu-header">
+                <div class="menu-avatar">🤖</div>
+                <h3 id="userEmailDisplay">Usuario Demo</h3>
+                <span class="license-status" id="licenseStatus">Demo Mode</span>
+            </div>
+            <ul class="menu-items">
+                <li><button class="menu-item" id="menuNewChat">✨ Nuevo Chat</button></li>
+                <li><button class="menu-item" id="menuClearHistory">🗑️ Borrar Historial</button></li>
+                <li><button class="menu-item" id="menuUpgrade">💎 Upgrade to Pro</button></li>
+                <li><button class="menu-item" id="menuLogout">🚪 Cerrar Sesión</button></li>
+            </ul>
+            <div class="menu-footer">
+                <small>v2.0.0 | Jarvis Engine</small>
+            </div>
+        </nav>
+
+        <!-- Chat principal -->
+        <main class="chat-main">
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message">
+                    <div class="ai-icon">🎧</div>
+                    <h2>Hola, soy <span class="ai-glow">LinguaAI</span></h2>
+                    <p>Tu tutora personal de idiomas con voz de mujer.<br>¿Qué quieres practicar hoy?</p>
+                </div>
+            </div>
+            
+            <div class="input-area glass">
+                <div class="language-selector">
+                    <select id="languageSelect">
+                        <option value="Spanish">🇪🇸 Español</option>
+                        <option value="English">🇬🇧 English</option>
+                        <option value="French">🇫🇷 Français</option>
+                        <option value="German">🇩🇪 Deutsch</option>
+                        <option value="Italian">🇮🇹 Italiano</option>
+                        <option value="Japanese">🇯🇵 日本語</option>
+                    </select>
+                </div>
+                <div class="input-wrapper">
+                    <textarea id="userInput" placeholder="Escribe tu mensaje... (Enter para enviar)" rows="1"></textarea>
+                    <div class="input-buttons">
+                        <button id="voiceBtn" class="icon-btn" title="Entrada de voz">🎤</button>
+                        <button id="speakerBtn" class="icon-btn" title="Escuchar respuesta">🔊</button>
+                        <button id="sendBtn" class="send-btn">📤</button>
+                    </div>
+                </div>
+                <div class="voice-status" id="voiceStatus"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Upgrade -->
+    <div class="modal" id="upgradeModal">
+        <div class="modal-content glass">
+            <span class="close">&times;</span>
+            <h2>💎 LinguaAI Pro</h2>
+            <p>Ingresa tu código de licencia</p>
+            <input type="text" id="licenseCode" placeholder="XXXX-XXXX-XXXX">
+            <button id="activatePro">Activar Pro</button>
+            <hr>
+            <small>¿Sin licencia? Demo incluye: 10 mensajes/día</small>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/hamburger.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
