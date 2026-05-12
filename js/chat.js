@@ -13,33 +13,62 @@ class LinguaAIChat {
             this.promptForApiKey();
         } else {
             console.log('✅ API key cargada');
+            // Probar el modelo Llama 4
+            this.testModel();
         }
         
         setTimeout(() => {
             if (this.messages.length === 0 && this.GROQ_API_KEY) {
-                this.addMessage('ai', '🎧 ¡Hola! Soy LinguaAI con Groq. ¿Qué idioma quieres practicar hoy? 🚀');
+                this.addMessage('ai', '🎧 ¡Hola! Soy LinguaAI con Llama 4. Pregúntame sobre cualquier idioma. ¡Soy más rápida e inteligente! 🚀');
             } else if (this.messages.length === 0) {
-                this.addMessage('ai', '🎧 Hola! Para usar IA gratuita, configura tu API key de Groq en el menú ☰ → 🔑');
+                this.addMessage('ai', '🎧 Hola! Para usar IA gratuita (Llama 4), configura tu API key de Groq en el menú ☰ → 🔑');
             }
         }, 1000);
+    }
+
+    async testModel() {
+        try {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+                    messages: [{ role: 'user', content: 'Say OK' }],
+                    max_tokens: 5
+                })
+            });
+            
+            if (response.ok) {
+                console.log('✅ Llama 4 Scout listo!');
+                this.addMessage('system', '🤖 Llama 4 activado. ¡IA más rápida y precisa!');
+            } else {
+                console.error('❌ Error con Llama 4, usando fallback');
+            }
+        } catch (error) {
+            console.error('Error probando modelo:', error);
+        }
     }
 
     promptForApiKey() {
         setTimeout(() => {
             const key = prompt(
-                '🔑 GROQ AI - GRATIS\n\n' +
+                '🔑 GROQ AI - GRATIS (Llama 4)\n\n' +
                 '1. Ve a https://console.groq.com\n' +
                 '2. Regístrate (gratis, 1 minuto)\n' +
                 '3. Ve a "API Keys" → "Create API Key"\n' +
                 '4. Copia la key (gsk_...)\n' +
                 '5. Pégala aquí:\n\n' +
-                '¡Es 100% GRATIS!'
+                'Usarás Llama 4 Scout - ¡GRATIS!'
             );
             
             if (key && key.startsWith('gsk_')) {
                 localStorage.setItem('groq_api_key', key);
                 this.GROQ_API_KEY = key;
-                this.addMessage('system', '✅ ¡API Key configurada! Usando Groq gratis. ¡Pregúntame cualquier cosa!');
+                this.addMessage('system', '✅ ¡API Key configurada! Usando Llama 4 Scout. ¡Pregúntame cualquier cosa!');
+                this.testModel();
             } else if (key) {
                 alert('❌ Key inválida. Debe empezar con "gsk_"');
                 this.promptForApiKey();
@@ -58,39 +87,45 @@ class LinguaAIChat {
                     v.name.toLowerCase().includes('monica') ||
                     v.name.toLowerCase().includes('zira')
                 ) || voices[0];
+                if (this.voice) console.log('🎤 Voz:', this.voice.name);
             };
             setVoices();
             window.speechSynthesis.onvoiceschanged = setVoices;
         }
     }
 
-    // ========== TUTOR IA CON GROQ - USANDO MODELO ACTIVO ==========
+    // ========== TUTOR IA CON LLAMA 4 SCOUT ==========
     async sendToGroq(userText, language) {
         if (!this.GROQ_API_KEY) {
             return this.getOfflineResponse(userText, language);
         }
 
-        const systemPrompt = `Eres LinguaAI, una tutora experta de ${language} con voz femenina.
+        const systemPrompt = `Eres LinguaAI, una tutora experta de ${language} con voz femenina, usando Llama 4.
 
-INSTRUCCIONES:
-1. Corrige errores gramaticales y ortográficos
-2. Explica POR QUÉ está mal (regla gramatical)
-3. Da 1-2 ejemplos claros
-4. Responde preguntas naturalmente
-5. Mantén respuestas cortas (2-3 oraciones)
-6. Sé amable y motivadora
+🚀 **CARACTERÍSTICAS:** Rápida, inteligente, contextual
 
-FORMATO DE CORRECCIÓN:
-📝 "frase_incorrecta" → "frase_correcta"
-💡 Explicación: [regla gramatical breve]
-📖 Ejemplo: [frase de ejemplo]
+📚 **INSTRUCCIONES OBLIGATORIAS:**
+1. CORRIGE errores gramaticales y ortográficos
+2. EXPLICA POR QUÉ está mal (regla gramatical específica)
+3. DA 2 ejemplos claros y variados
+4. RESPONDE PREGUNTAS complejas sobre ${language}
+5. ADAPTA tu nivel al estudiante
+6. SÉ AMABLE pero precisa
+7. MANTÉN respuestas de 3-4 oraciones
 
-RESPONDE EN ${language}`;
+🎯 **FORMATO OBLIGATORIO:**
+📝 "${frase_incorrecta}" → "${frase_correcta}"
+💡 Explicación: [regla gramatical con criterio]
+📖 Ejemplo 1: [frase correcta]
+📖 Ejemplo 2: [otra frase correcta]
+✏️ Ahora practica: [ejercicio corto]
+
+RESPONDE SIEMPRE EN ${language}
+¡SÉ ÚTIL Y PRECISA!`;
 
         try {
-            console.log('🚀 Enviando a Groq:', userText);
+            console.log('🚀 Enviando a Llama 4:', userText);
             
-            // MODELO ACTIVO Y GRATUITO
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -98,13 +133,15 @@ RESPONDE EN ${language}`;
                     'Authorization': `Bearer ${this.GROQ_API_KEY}`
                 },
                 body: JSON.stringify({
-                    model: 'llama-3.1-8b-instant',  // ✅ MODELO ACTIVO Y GRATUITO
+                    model: 'meta-llama/llama-4-scout-17b-16e-instruct', // Llama 4 Scout
                     messages: [
                         { role: 'system', content: systemPrompt },
+                        ...this.messages.slice(-15), // Contexto de conversación
                         { role: 'user', content: userText }
                     ],
                     temperature: 0.7,
-                    max_tokens: 300
+                    max_tokens: 400,
+                    top_p: 0.9
                 })
             });
 
@@ -115,29 +152,59 @@ RESPONDE EN ${language}`;
                 if (response.status === 401) {
                     localStorage.removeItem('groq_api_key');
                     this.GROQ_API_KEY = null;
-                    return `❌ **API Key inválida**\n\nTu key no es válida. Ve a console.groq.com y genera una NUEVA key.`;
+                    return `❌ **API Key inválida**\n\nGenera una NUEVA key en console.groq.com`;
                 }
                 
                 if (response.status === 429) {
-                    return `⏳ **Límite alcanzado**\n\nEspera un momento antes de enviar más mensajes.`;
+                    return `⏳ **Límite alcanzado**\n\nEspera 30 segundos antes de enviar más mensajes.`;
                 }
                 
-                throw new Error(`Error ${response.status}`);
+                // Fallback a modelo alternativo si Llama 4 falla
+                return await this.fallbackToLlama3(userText, language);
             }
 
             const data = await response.json();
             const reply = data.choices[0].message.content;
-            console.log('✅ Respuesta recibida de Groq');
+            console.log('✅ Llama 4 respondió');
             return reply;
 
         } catch (error) {
-            console.error('Error en Groq:', error);
+            console.error('Error en Llama 4:', error);
+            return await this.fallbackToLlama3(userText, language);
+        }
+    }
+
+    async fallbackToLlama3(userText, language) {
+        console.log('🔄 Fallback a Llama 3.1');
+        try {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.1-8b-instant',
+                    messages: [
+                        { role: 'system', content: `Eres una tutora de ${language}. Corrige errores, da ejemplos. Responde en ${language}.` },
+                        { role: 'user', content: userText }
+                    ],
+                    max_tokens: 300
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data.choices[0].message.content;
+            }
+            return this.getOfflineResponse(userText, language);
+        } catch (error) {
             return this.getOfflineResponse(userText, language);
         }
     }
 
     getOfflineResponse(text, language) {
-        return `⚠️ **Modo demostración**\n\nPara usar la IA tutor gratuita:\n\n1. Ve a console.groq.com\n2. Regístrate (1 minuto)\n3. Crea una API Key\n4. Ve al menú ☰ → 🔑 Configurar API Key\n\n📝 Tu mensaje: "${text}"\n\n¡Es 100% gratis! 🚀`;
+        return `⚠️ **Modo demostración**\n\nPara usar Llama 4 (IA gratuita):\n\n1. Ve a console.groq.com\n2. Regístrate (1 minuto)\n3. Crea una API Key\n4. Ve al menú ☰ → 🔑\n\n📝 "${text}"\n\n¡Es 100% gratis y mucho más inteligente! 🚀`;
     }
 
     async sendMessage(userText, language) {
@@ -171,7 +238,7 @@ RESPONDE EN ${language}`;
         const indicator = document.createElement('div');
         indicator.className = 'message ai typing';
         indicator.id = 'typingIndicator';
-        indicator.innerHTML = '<strong>🤖 LinguaAI con Groq...</strong><br><span class="dots">●●●</span>';
+        indicator.innerHTML = '<strong>🧠 LinguaAI (Llama 4) pensando...</strong><br><span class="dots">●●●</span>';
         messagesDiv.appendChild(indicator);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
         
@@ -201,10 +268,14 @@ RESPONDE EN ${language}`;
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}`;
         const icon = role === 'user' ? '👤' : role === 'ai' ? '🤖' : 'ℹ️';
-        const name = role === 'user' ? 'Tú' : role === 'ai' ? 'LinguaAI' : 'Sistema';
+        const name = role === 'user' ? 'Tú' : role === 'ai' ? 'LinguaAI (Llama 4)' : 'Sistema';
         
         let formattedContent = content
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/📝/g, '<span style="color: #00d4ff;">📝</span>')
+            .replace(/💡/g, '<span style="color: #ffd700;">💡</span>')
+            .replace(/📖/g, '<span style="color: #7c3aed;">📖</span>')
+            .replace(/✏️/g, '<span style="color: #00ff88;">✏️</span>')
             .replace(/\n/g, '<br>');
         
         messageDiv.innerHTML = `<strong>${icon} ${name}</strong><div class="message-content">${formattedContent}</div>`;
@@ -222,7 +293,7 @@ RESPONDE EN ${language}`;
             if (!window.speechSynthesis) { resolve(); return; }
             try {
                 window.speechSynthesis.cancel();
-                const cleanText = text.replace(/\*\*/g, '').replace(/\n/g, ' ');
+                const cleanText = text.replace(/\*\*/g, '').replace(/[📝💡📖✏️]/g, '').replace(/\n/g, ' ');
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = language === 'Spanish' ? 'es-ES' : 'en-US';
                 utterance.rate = 0.9;
@@ -259,7 +330,7 @@ RESPONDE EN ${language}`;
         this.messages = [];
         const messagesDiv = document.getElementById('chatMessages');
         if (messagesDiv) {
-            messagesDiv.innerHTML = `<div class="welcome-message"><div class="ai-icon">🎧</div><h2>Hola, soy <span class="ai-glow">LinguaAI</span></h2><p>Tu tutora IA con Groq.<br>¡Gratis, rápida y en español! 🚀</p></div>`;
+            messagesDiv.innerHTML = `<div class="welcome-message"><div class="ai-icon">🧠</div><h2>Hola, soy <span class="ai-glow">LinguaAI</span></h2><p>Tu tutora IA con <strong>Llama 4</strong>.<br>¡La IA más rápida e inteligente, 100% gratis! 🚀</p></div>`;
         }
         this.saveHistory();
     }
