@@ -102,23 +102,74 @@ class LinguaAIChat {
     }
 
     // ========== TUTOR IA CON GROQ ==========
+    // ========== TUTORA EXPERTO DE IDIOMAS - PROMPT MEJORADO ==========
     async sendToGroq(userText, language) {
         if (!this.GROQ_API_KEY) {
             return this.getOfflineResponse(userText, language);
         }
-
-        const systemPrompt = `Eres LinguaAI, una tutora experta de ${language}. 
-Reglas:
-1. Corrige errores gramaticales
-2. Da ejemplos claros
-3. Responde en ${language}
-4. Sé breve (2-3 oraciones)
-5. Sé amable y motivadora
-
-Responde en ${language}:`;
-
+    
+        // PROMPT PROFESIONAL PARA TUTORÍA DE IDIOMAS
+        const systemPrompt = `Eres LinguaAI, una tutora profesional de idiomas con voz femenina.
+    
+    🎯 **TU ROL:** Tutora experta, paciente y motivadora
+    
+    📚 **IDIOMA ACTUAL:** ${language}
+    
+    ⚡ **REGLAS OBLIGATORIAS (SIGUE ESTRICTAMENTE):**
+    
+    1. **CORRECCIÓN DE ERRORES:**
+       - Detecta TODOS los errores gramaticales, ortográficos y de pronunciación
+       - Muestra: 🔴 "frase_incorrecta" → 🟢 "frase_correcta"
+       - Explica POR QUÉ está mal con la regla gramatical
+    
+    2. **EJEMPLOS (SIEMPRE da 2-3 ejemplos):**
+       - 📖 Ejemplo 1: [contexto diferente]
+       - 📖 Ejemplo 2: [contexto diferente]
+       - Si el estudiante pide más, da 2 ejemplos adicionales
+    
+    3. **CONVERSACIÓN NATURAL:**
+       - Mantén la conversación fluida como un amigo
+       - Haz preguntas de seguimiento para que el estudiante practique
+       - NO respondas con "sí" o "no" solos, explica siempre
+    
+    4. **ESTRUCTURA DE RESPUESTA (USA ESTE FORMATO):**
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━
+       📝 **Corrección:**
+       "${texto_erroneo}" → "${texto_correcto}"
+       
+       💡 **Explicación:**
+       [Regla gramatical clara y concisa]
+       
+       📖 **Ejemplos:**
+       1. [Ejemplo relevante 1]
+       2. [Ejemplo relevante 2]
+       
+       🎯 **Ahora practica:**
+       [Pregunta o ejercicio corto para que el estudiante responda]
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    5. **RESPUESTAS ADAPTATIVAS:**
+       - Si el estudiante escribió algo CORRECTO: ✅ Felicita y da ejemplos adicionales
+       - Si el estudiante PREGUNTA algo: Responde con claridad + ejemplos
+       - Si el estudiante PIDE ejercicios: Propón 2-3 ejercicios interactivos
+       - Si el estudiante comete MUCHOS errores: Sé paciente, reduce la dificultad
+    
+    6. **EJERCICIOS INTERACTIVOS (cuando sea apropiado):**
+       - Completar espacios en blanco: "She ___ (go) to school"
+       - Traducción: "Traduce al ${language}: 'The cat is sleeping'"
+       - Corrección: "¿Qué hay mal en: 'He don't like pizza'?"
+       - Conversación: "Responde a esta pregunta: 'What did you do yesterday?'"
+    
+    7. **TONO Y ESTILO:**
+       - Usa emojis moderadamente (📝💡📖🎯✅🔴🟢)
+       - Sé entusiasta y motivadora
+       - Mantén respuestas de 3-5 oraciones (no muy largas)
+    
+    RESPONDE SIEMPRE EN ${language}
+    ¡COMIENZA TU RESPUESTA AHORA!`;
+    
         try {
-            console.log('🚀 Enviando a Groq:', userText);
+            console.log('🚀 Enviando a Groq (tutora experta):', userText);
             
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
@@ -127,16 +178,16 @@ Responde en ${language}:`;
                     'Authorization': `Bearer ${this.GROQ_API_KEY}`
                 },
                 body: JSON.stringify({
-                    model: 'llama-3.1-8b-instant',  // Modelo estable
+                    model: 'llama-3.1-8b-instant',
                     messages: [
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userText }
                     ],
                     temperature: 0.7,
-                    max_tokens: 250
+                    max_tokens: 500  // Aumentado para dar más ejemplos
                 })
             });
-
+    
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('❌ Error HTTP:', response.status, errorText);
@@ -144,24 +195,24 @@ Responde en ${language}:`;
                 if (response.status === 401) {
                     localStorage.removeItem('groq_api_key');
                     this.GROQ_API_KEY = null;
-                    return `❌ **API Key inválida**\n\nTu key no funciona. Ve a console.groq.com y genera una NUEVA key.`;
+                    return `❌ **API Key inválida**\n\nVe a console.groq.com y genera una nueva key.`;
                 }
                 
                 if (response.status === 429) {
-                    return `⏳ **Demasiadas solicitudes**\n\nEspera 30 segundos antes de enviar otro mensaje.`;
+                    return `⏳ **Espera un momento**\n\nDemasiadas solicitudes. Espera 30 segundos.`;
                 }
                 
-                return `⚠️ **Error ${response.status}**\n\nNo se pudo conectar con la IA. Revisa tu conexión o intenta más tarde.`;
+                return this.getOfflineResponse(userText, language);
             }
-
+    
             const data = await response.json();
             const reply = data.choices[0].message.content;
-            console.log('✅ Respuesta recibida');
+            console.log('✅ Respuesta de tutora recibida');
             return reply;
-
+    
         } catch (error) {
             console.error('❌ Error en sendToGroq:', error);
-            return `⚠️ **Error de conexión**\n\nNo se pudo contactar al servidor. Verifica tu internet.\n\n📝 Tu mensaje: "${userText}"`;
+            return this.getOfflineResponse(userText, language);
         }
     }
 
@@ -169,6 +220,87 @@ Responde en ${language}:`;
         return `⚠️ **Modo demostración**\n\nPara usar la IA:\n\n1. Ve a console.groq.com\n2. Regístrate (gratis)\n3. Crea una API Key\n4. Ve al menú ☰ → 🔑 Configurar API Key\n\n📝 "${text}"\n\n¡Es gratis! 🚀`;
     }
 
+    // ========== EJERCICIOS INTERACTIVOS ==========
+    generarEjercicio(language, nivel = 'intermedio') {
+        const ejercicios = {
+            English: {
+                principiante: {
+                    completar: [
+                        { frase: "I ___ (be) happy today", respuesta: "am" },
+                        { frase: "She ___ (like) pizza", respuesta: "likes" },
+                        { frase: "They ___ (go) to school", respuesta: "go" }
+                    ],
+                    traduccion: [
+                        { frase: "The cat is sleeping", respuesta: "El gato está durmiendo" },
+                        { frase: "I love learning", respuesta: "Me encanta aprender" }
+                    ],
+                    correccion: [
+                        { frase: "He go to school", error: "go", correcto: "goes" }
+                    ]
+                },
+                intermedio: {
+                    completar: [
+                        { frase: "If I ___ (be) rich, I would travel", respuesta: "were" },
+                        { frase: "She ___ (already/finish) her homework", respuesta: "has already finished" }
+                    ],
+                    traduccion: [
+                        { frase: "I have been waiting for 2 hours", respuesta: "He estado esperando por 2 horas" }
+                    ]
+                }
+            },
+            Spanish: {
+                principiante: {
+                    completar: [
+                        { frase: "Yo ___ (ser) feliz", respuesta: "soy" },
+                        { frase: "Ella ___ (comer) manzanas", respuesta: "come" }
+                    ],
+                    traduccion: [
+                        { frase: "The dog is barking", respuesta: "El perro está ladrando" }
+                    ]
+                }
+            }
+        };
+        
+        const langEjercicios = ejercicios[language] || ejercicios.English;
+        const nivelEjercicios = langEjercicios[nivel] || langEjercicios.intermedio;
+        
+        // Seleccionar un ejercicio aleatorio
+        const tipos = Object.keys(nivelEjercicios);
+        const tipoAleatorio = tipos[Math.floor(Math.random() * tipos.length)];
+        const ejerciciosLista = nivelEjercicios[tipoAleatorio];
+        const ejercicio = ejerciciosLista[Math.floor(Math.random() * ejerciciosLista.length)];
+        
+        let textoEjercicio = "";
+        switch(tipoAleatorio) {
+            case 'completar':
+                textoEjercicio = `📝 **Completa el espacio:**\n"${ejercicio.frase}"\n\nEscribe tu respuesta:`;
+                break;
+            case 'traduccion':
+                textoEjercicio = `🌐 **Traduce al ${language}:**\n"${ejercicio.frase}"\n\nEscribe tu traducción:`;
+                break;
+            case 'correccion':
+                textoEjercicio = `🔍 **Corrige esta frase:**\n"${ejercicio.frase}"\n\n¿Cuál es la forma correcta?`;
+                break;
+        }
+        
+        return {
+            texto: textoEjercicio,
+            respuesta: ejercicio.respuesta,
+            tipo: tipoAleatorio
+        };
+    }
+    
+    // Verificar respuesta de ejercicio
+    verificarEjercicio(respuestaUsuario, ejercicio) {
+        const esCorrecto = respuestaUsuario.toLowerCase().trim() === ejercicio.respuesta.toLowerCase();
+        
+        if (esCorrecto) {
+            return `✅ **¡Correcto!** Muy bien. "${respuestaUsuario}" es la respuesta adecuada.\n\n🎯 ¿Quieres otro ejercicio o prefieres seguir conversando?`;
+        } else {
+            return `❌ **Casi allí!** La respuesta correcta es: "${ejercicio.respuesta}"\n\n📖 Recuerda practicar esta estructura. ¿Intentamos otro ejercicio?`;
+        }
+    }
+    
     async sendMessage(userText, language) {
         if (window.auth && !window.auth.canSendMessage()) {
             this.addMessage('system', '⚠️ Límite diario alcanzado (10 mensajes).');
