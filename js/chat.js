@@ -6,84 +6,75 @@ class LinguaAIChat {
         this.initEventListeners();
         this.setupVoice();
         
-        // Cargar API key de Groq
-        this.GROQ_API_KEY = this.loadApiKey();
+        // CARGAR API KEY - PRIORIDAD ALTA
+        this.GROQ_API_KEY = localStorage.getItem('groq_api_key') || sessionStorage.getItem('groq_api_key');
         
-        // Verificar si hay API key
+        // SI NO HAY KEY, PEDIRLA INMEDIATAMENTE
         if (!this.GROQ_API_KEY) {
-            this.showApiKeyPrompt();
+            console.log('⚠️ No hay API key de Groq');
+            this.promptForApiKey();
         } else {
-            this.testApiConnection();
+            console.log('✅ API key de Groq cargada:', this.GROQ_API_KEY.substring(0, 10) + '...');
+            this.testConnection();
         }
         
         setTimeout(() => {
-            if (this.messages.length === 0) {
-                this.addMessage('ai', '🎧 ¡Hola! Soy LinguaAI, tu tutora IA. Escríbeme en el idioma que quieras practicar y conversaremos naturalmente. ¡Te corregiré y ayudaré a mejorar! 🚀');
+            if (this.messages.length === 0 && this.GROQ_API_KEY) {
+                this.addMessage('ai', '🎧 ¡Hola! Soy LinguaAI con Groq. Pregúntame lo que sea sobre cualquier idioma. ¡Conversemos! 🚀');
+            } else if (this.messages.length === 0) {
+                this.addMessage('ai', '🎧 Hola! Para usar la IA avanzada, necesitas configurar tu API key de Groq. Ve al menú ☰ → 🔑 Configurar API Key');
             }
         }, 1000);
     }
 
-    loadApiKey() {
-        return sessionStorage.getItem('groq_api_key') || localStorage.getItem('groq_api_key') || null;
-    }
-
-    saveApiKey(key, persistent = false) {
-        if (persistent) {
+    promptForApiKey() {
+        const key = prompt(
+            '🔑 ¡ACTIVA LA IA DE GROQ!\n\n' +
+            '1. Ve a console.groq.com\n' +
+            '2. Regístrate gratis (2 min)\n' +
+            '3. Crea una API Key\n' +
+            '4. Pégala aquí:\n\n' +
+            'La key empieza con "gsk_"\n\n' +
+            '¿La tienes? ¡Pégala ahora!'
+        );
+        
+        if (key && key.startsWith('gsk_')) {
             localStorage.setItem('groq_api_key', key);
-        } else {
-            sessionStorage.setItem('groq_api_key', key);
+            this.GROQ_API_KEY = key;
+            this.testConnection();
+            this.addMessage('system', '✅ ¡API Key configurada! Ahora usaré IA de Groq. ¡Pregúntame cualquier cosa!');
+            location.reload();
+        } else if (key) {
+            alert('❌ Key inválida. Debe empezar con "gsk_"');
+            this.promptForApiKey();
         }
-        this.GROQ_API_KEY = key;
     }
 
-    showApiKeyPrompt() {
-        setTimeout(() => {
-            const useGroq = confirm(
-                '🤖 LINGUAAI - TUTOR IA CON GROQ\n\n' +
-                '¿Quieres usar la IA avanzada de Groq (gratis)?\n\n' +
-                '✅ SÍ - IA conversacional real\n' +
-                '❌ NO - Modo básico offline\n\n' +
-                '¡Regístrate gratis en console.groq.com!'
-            );
-            
-            if (useGroq) {
-                const key = prompt(
-                    '🔑 Ingresa tu API Key de Groq:\n\n' +
-                    '1. Ve a console.groq.com\n' +
-                    '2. Regístrate gratis\n' +
-                    '3. Crea una API Key\n' +
-                    '4. Pégala aquí:\n\n' +
-                    '(La key empieza con gsk_)'
-                );
-                
-                if (key && key.startsWith('gsk_')) {
-                    const save = confirm('¿Guardar la key permanentemente?');
-                    this.saveApiKey(key, save);
-                    this.addMessage('system', '✅ API Key de Groq configurada. ¡Usando IA avanzada!');
-                    this.testApiConnection();
-                } else if (key) {
-                    this.addMessage('system', '❌ API Key inválida. Usando modo offline.');
-                }
-            } else {
-                this.addMessage('system', '📘 Modo offline activado. Para IA avanzada, configura API Key en el menú 🔑');
-            }
-        }, 1500);
-    }
-
-    async testApiConnection() {
+    async testConnection() {
         try {
-            const response = await fetch('https://api.groq.com/openai/v1/models', {
-                headers: { 'Authorization': `Bearer ${this.GROQ_API_KEY}` }
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'mixtral-8x7b-32768',
+                    messages: [{ role: 'user', content: 'Say "OK" if you receive this' }],
+                    max_tokens: 10
+                })
             });
+            
             if (response.ok) {
-                console.log('✅ Groq API conectada correctamente');
-                this.addMessage('system', '🤖 IA avanzada lista. ¡Conversa conmigo naturalmente!');
+                console.log('✅ Groq conectado correctamente');
+                this.addMessage('system', '🤖 IA de Groq activada. ¡Soy tu tutora personal!');
             } else {
-                console.error('❌ Error conectando a Groq');
+                console.error('❌ Error conectando a Groq:', response.status);
                 this.GROQ_API_KEY = null;
+                localStorage.removeItem('groq_api_key');
             }
         } catch (error) {
-            console.error('❌ No se pudo conectar a Groq:', error);
+            console.error('❌ No se pudo conectar:', error);
             this.GROQ_API_KEY = null;
         }
     }
@@ -105,41 +96,44 @@ class LinguaAIChat {
         }
     }
 
-    // ========== TUTOR IA CON GROQ ==========
+    // ========== TUTOR IA CON GROQ - VERSIÓN REAL ==========
     async sendToGroq(userText, language) {
         if (!this.GROQ_API_KEY) {
-            return this.getOfflineResponse(userText, language);
+            return `⚠️ **No hay API key de Groq configurada**\n\nPara usar la IA, necesitas:\n\n1. Ve a console.groq.com\n2. Regístrate gratis\n3. Crea una API Key\n4. Ve al menú ☰ → 🔑 Configurar API Key\n\n¡Es gratis y toma 2 minutos! 🚀`;
         }
 
-        // Sistema de prompts para ser un buen tutor
-        const systemPrompt = `Eres LinguaAI, una tutora de idiomas con voz de mujer. Tus características:
+        // Prompt de TUTOR EXPERTO
+        const systemPrompt = `Eres LinguaAI, una tutora profesional de idiomas con voz de mujer.
 
-📚 **Personalidad:** Amable, paciente, entusiasta, motivadora
-🎯 **Objetivo:** Ayudar al estudiante a mejorar su ${language}
+**ROL:** Tutora paciente, entusiasta y experta en ${language}
 
-**REGLAS IMPORTANTES:**
-1. CORRIGE errores gramaticales y ortográficos
-2. DA ejemplos relevantes
-3. EXPLICA por qué algo está mal
-4. MOTIVA al estudiante a seguir practicando
-5. ADAPTA tu nivel al del estudiante
-6. HAZ preguntas para mantener la conversación
-7. RESPUESTAS cortas (máximo 3-4 oraciones)
+**INSTRUCCIONES ESTRICTAS:**
+1. ✅ CORRIGE todos los errores gramaticales y ortográficos
+2. ✅ EXPLICA POR QUÉ está mal (regla gramatical)
+3. ✅ DA EJEMPLOS correctos
+4. ✅ RESPONDE PREGUNTAS complejas sobre ${language}
+5. ✅ MANTÉN conversación natural
+6. ✅ USA emojis ocasionalmente para ser amigable
+7. ✅ RESPUESTAS de 2-4 oraciones (no muy largas)
 
-**RESPONDE SIEMPRE EN ${language}**
-**SI EL ESTUDIANTE COMETE UN ERROR:**
-- Primero, muestra la corrección: "📝 Corrección: X → Y"
-- Luego, explica brevemente la regla
-- Finalmente, pide que lo intente de nuevo
+**FORMATO DE CORRECCIÓN:**
+📝 "${texto_erroneo}" → "${texto_correcto}"
+💡 Explicación: [regla gramatical]
+📖 Ejemplo: [frase adicional]
 
 **EJEMPLO DE RESPUESTA IDEAL:**
-"📝 'She go to school' → 'She goes to school'
-✅ Explicación: En presente simple, con 'she' usamos 'goes'
-✏️ Ahora intenta tú: 'She ___ (eat) an apple'"
+Usuario: "She go to school"
+Tú: 📝 "She go to school" → "She goes to school"
+💡 Explicación: En presente simple, con "she/he/it" se añade "s" al verbo
+📖 Ejemplo: "She goes to school every day"
+✏️ Ahora intenta: "He ___ (eat) an apple"
 
-¡Comienza la conversación!`;
+¡RESPONDE SIEMPRE EN ${language}!
+¡Comienza a ayudar al estudiante!`;
 
         try {
+            console.log('🚀 Enviando a Groq:', userText);
+            
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -147,75 +141,64 @@ class LinguaAIChat {
                     'Authorization': `Bearer ${this.GROQ_API_KEY}`
                 },
                 body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile', // Modelo gratuito y potente
+                    model: 'mixtral-8x7b-32768',
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        ...this.messages.slice(-10), // Contexto de los últimos mensajes
+                        ...this.messages.slice(-15),
                         { role: 'user', content: userText }
                     ],
-                    temperature: 0.7,
-                    max_tokens: 300
+                    temperature: 0.8,
+                    max_tokens: 400
                 })
             });
 
             if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Error Groq:', errorData);
+                
                 if (response.status === 401) {
-                    this.addMessage('system', '❌ API Key inválida. Configura una nueva en el menú 🔑');
-                    this.GROQ_API_KEY = null;
-                    sessionStorage.removeItem('groq_api_key');
                     localStorage.removeItem('groq_api_key');
-                    return this.getOfflineResponse(userText, language);
+                    this.GROQ_API_KEY = null;
+                    return `❌ **API Key inválida o expirada**\n\nVe a console.groq.com, genera una NUEVA key y configúrala en el menú 🔑`;
                 }
+                
                 throw new Error(`Error ${response.status}`);
             }
 
             const data = await response.json();
             const reply = data.choices[0].message.content;
-            console.log('🤖 Groq respondió:', reply);
+            console.log('✅ Respuesta de Groq recibida:', reply.substring(0, 100));
             return reply;
 
         } catch (error) {
-            console.error('Error con Groq:', error);
-            return this.getOfflineResponse(userText, language);
+            console.error('Error en Groq:', error);
+            return `⚠️ **Error de conexión con Groq**\n\nVerifica tu conexión a internet y que la API key sea correcta.\n\n📝 Tu mensaje: "${userText}"\n\nIntenta de nuevo o configura otra key en el menú 🔑`;
         }
     }
 
-    // Fallback offline cuando no hay API key
-    getOfflineResponse(text, language) {
-        return `⚠️ **Modo offline activado**\n\nPara usar la IA tutor, configura tu API Key de Groq en el menú (☰ → 🔑 Configurar API Key).\n\n📝 Tu mensaje: "${text}"\n\n✅ Regístrate gratis en console.groq.com y obtén tu key.`;
-    }
-
     async sendMessage(userText, language) {
-        // Verificar límite de demo
         if (window.auth && !window.auth.canSendMessage()) {
             this.addMessage('system', '⚠️ Límite diario de demo alcanzado (10 mensajes). Actualiza a Pro.');
             return;
         }
 
-        // Mostrar mensaje del usuario
         this.addMessage('user', userText);
         
-        // Mostrar indicador de "escribiendo"
+        // Indicador de escritura
         const typingIndicator = this.showTypingIndicator();
         
         // Obtener respuesta de Groq
         const reply = await this.sendToGroq(userText, language);
         
-        // Remover indicador
         if (typingIndicator) typingIndicator.remove();
         
-        // Mostrar respuesta
         this.addMessage('ai', reply);
         
-        // Reproducir voz
+        // Voz
         this.speak(reply, language).catch(e => console.log('Error al hablar:', e));
         
-        // Incrementar contador
-        if (window.auth) {
-            window.auth.incrementMessageCount();
-        }
+        if (window.auth) window.auth.incrementMessageCount();
         
-        // Guardar historial
         this.saveHistory();
     }
 
@@ -226,7 +209,7 @@ class LinguaAIChat {
         const indicator = document.createElement('div');
         indicator.className = 'message ai typing';
         indicator.id = 'typingIndicator';
-        indicator.innerHTML = '<strong>🤖 LinguaAI</strong><br><span class="dots">●●●</span>';
+        indicator.innerHTML = '<strong>🤖 LinguaAI pensando con Groq...</strong><br><span class="dots">●●●</span>';
         messagesDiv.appendChild(indicator);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
         
@@ -249,6 +232,10 @@ class LinguaAIChat {
     addMessage(role, content) {
         const messagesDiv = document.getElementById('chatMessages');
         if (!messagesDiv) return;
+        
+        // Limpiar indicador anterior
+        const oldIndicator = document.getElementById('typingIndicator');
+        if (oldIndicator) oldIndicator.remove();
         
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}`;
@@ -318,12 +305,11 @@ class LinguaAIChat {
     }
 
     resetApiKey() {
-        if (confirm('¿Eliminar API key y volver al modo offline?')) {
-            sessionStorage.removeItem('groq_api_key');
+        if (confirm('¿Eliminar API key?')) {
             localStorage.removeItem('groq_api_key');
+            sessionStorage.removeItem('groq_api_key');
             this.GROQ_API_KEY = null;
-            this.addMessage('system', '🔑 API key eliminada. Usando modo offline.');
-            this.showApiKeyPrompt();
+            location.reload();
         }
     }
 
