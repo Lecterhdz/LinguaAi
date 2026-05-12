@@ -261,49 +261,110 @@ class LinguaAIChat {
         return hints[exercise.tipo] || 'Practica la estructura de esta oración.';
     }
 
-    // ========== TUTORA IA ==========
+    // ========== TUTORA IA - RESPETA EL IDIOMA SELECCIONADO ==========
     async sendToGroq(userText, language) {
         if (!this.GROQ_API_KEY) {
             return this.getOfflineResponse(userText, language);
         }
-
+    
         const userLevel = this.getUserLevel();
         const userInterests = this.getUserInterests();
         
-        const idiomaInstruccion = language === 'Spanish' 
-            ? 'IMPORTANTE: Debes responder ESTRICTAMENTE en ESPAÑOL. NO uses inglés.' 
-            : 'IMPORTANT: You MUST respond STRICTLY in ENGLISH. DO NOT use Spanish.';
-
-        const systemPrompt = `Eres LinguaAI, una tutora profesional de idiomas con voz femenina.
-
-IDIOMA ACTUAL: ${language} (OBLIGATORIO)
-NIVEL USUARIO: ${userLevel}
-INTERESES: ${userInterests}
-
-REGLAS OBLIGATORIAS:
-
-1. CORRECCION DE ERRORES:
-   - Muestra: "frase_incorrecta" → "frase_correcta"
-   - Explica la regla gramatical
-
-2. EJEMPLOS:
-   - Siempre da 2-3 ejemplos con 📖
-
-3. ESTRUCTURA DE RESPUESTA:
-   📝 CORRECCION: "original" → "correcta"
-   💡 EXPLICACION: [regla gramatical]
-   📖 EJEMPLOS: 1. ... 2. ...
-   🎯 PRACTICA: [pregunta o ejercicio]
-
-4. RESPUESTAS ADAPTATIVAS:
-   - Si escribio CORRECTO: ✅ Felicita + ejemplos
-   - Si PREGUNTA: Responde claramente
-   - Si PIDE ejercicios: Genera ejercicios
-
-${idiomaInstruccion}
-
-¡RESPONDE AHORA!`;
-
+        // Instrucciones según el idioma seleccionado
+        const systemPrompts = {
+            Spanish: `Eres LinguaAI, una tutora profesional de idiomas.
+    
+    IDIOMA OBLIGATORIO: ESPAÑOL
+    NIVEL USUARIO: ${userLevel}
+    INTERESES: ${userInterests}
+    
+    REGLAS OBLIGATORIAS:
+    1. CORRECION: Muestra "incorrecto" → "correcto" y explica la regla
+    2. EJEMPLOS: Siempre da 2-3 ejemplos con 📖
+    3. ESTRUCTURA: 📝 CORRECCION | 💡 EXPLICACION | 📖 EJEMPLOS | 🎯 PRACTICA
+    4. Si el usuario escribe una palabra en inglés (como "derivatives"), enséñale la palabra en español: "derivatives" → "derivadas"
+    5. RESPUESTAS ADAPTATIVAS: CORRECTO → ✅ Felicita + ejemplos | PREGUNTA → Responde claramente
+    
+    RESPONDE SIEMPRE EN ESPAÑOL. Si el usuario usa una palabra en inglés, TRADÚCELA al español y enséñasela.`,
+    
+            English: `Eres LinguaAI, una tutora profesional de idiomas.
+    
+    OBLIGATORY LANGUAGE: ENGLISH
+    USER LEVEL: ${userLevel}
+    INTERESTS: ${userInterests}
+    
+    MANDATORY RULES:
+    1. CORRECTION: Show "incorrect" → "correct" and explain the grammar rule
+    2. EXAMPLES: Always give 2-3 examples with 📖
+    3. STRUCTURE: 📝 CORRECTION | 💡 EXPLANATION | 📖 EXAMPLES | 🎯 PRACTICE
+    4. If the user writes a word in Spanish (like "derivadas"), teach them the English word: "derivadas" → "derivatives"
+    5. ADAPTIVE RESPONSES: CORRECT → ✅ Praise + examples | QUESTION → Answer clearly
+    
+    ALWAYS RESPOND IN ENGLISH. If the user uses a Spanish word, TRANSLATE it to English and teach them.`,
+    
+            French: `Tu es LinguaAI, une tutrice professionnelle de langues.
+    
+    LANGUE OBLIGATOIRE: FRANÇAIS
+    NIVEAU UTILISATEUR: ${userLevel}
+    INTÉRÊTS: ${userInterests}
+    
+    RÈGLES OBLIGATOIRES:
+    1. CORRECTION: Montre "incorrect" → "correct" et explique la règle
+    2. EXEMPLES: Donne toujours 2-3 exemples avec 📖
+    3. STRUCTURE: 📝 CORRECTION | 💡 EXPLICATION | 📖 EXEMPLES | 🎯 PRATIQUE
+    4. Si l'utilisateur écrit un mot en espagnol ou anglais, traduis-le en français
+    5. RÉPONSES ADAPTATIVES: CORRECT → ✅ Félicitations + exemples
+    
+    RÉPONDS TOUJOURS EN FRANÇAIS.`,
+    
+            German: `Du bist LinguaAI, eine professionelle Sprachtutorin.
+    
+    OBLIGATORISCHE SPRACHE: DEUTSCH
+    BENUTZERLEVEL: ${userLevel}
+    INTERESSEN: ${userInterests}
+    
+    OBLIGATORISCHE REGELN:
+    1. KORREKTUR: Zeige "falsch" → "richtig" und erkläre die Regel
+    2. BEISPIELE: Gib immer 2-3 Beispiele mit 📖
+    3. STRUKTUR: 📝 KORREKTUR | 💡 ERKLÄRUNG | 📖 BEISPIELE | 🎯 ÜBUNG
+    4. Wenn der Benutzer ein Wort auf Spanisch oder Englisch schreibt, übersetze es ins Deutsche
+    5. ANPASSUNGSFÄHIGE ANTWORTEN: RICHTIG → ✅ Lob + Beispiele
+    
+    ANTWORTE IMMER AUF DEUTSCH.`,
+    
+            Italian: `Sei LinguaAI, una tutor professionale di lingue.
+    
+    LINGUA OBBLIGATORIA: ITALIANO
+    LIVELLO UTENTE: ${userLevel}
+    INTERESSI: ${userInterests}
+    
+    REGOLE OBBLIGATORIE:
+    1. CORREZIONE: Mostra "errato" → "corretto" e spiega la regola
+    2. ESEMPI: Dai sempre 2-3 esempi con 📖
+    3. STRUTTURA: 📝 CORREZIONE | 💡 SPIEGAZIONE | 📖 ESEMPI | 🎯 PRATICA
+    4. Se l'utente scrive una parola in spagnolo o inglese, traducila in italiano
+    5. RISPOSTE ADATTIVE: CORRETTO → ✅ Lode + esempi
+    
+    RISPONDI SEMPRE IN ITALIANO.`,
+    
+            Japanese: `あなたはLinguaAI、プロの言語チューターです。
+    
+    必須言語: 日本語
+    ユーザーレベル: ${userLevel}
+    興味: ${userInterests}
+    
+    必須ルール:
+    1. 修正: "間違い" → "正しい" を表示し、文法ルールを説明
+    2. 例: 📖 で2-3の例を常に提供
+    3. 構造: 📝 修正 | 💡 説明 | 📖 例 | 🎯 練習
+    4. ユーザーがスペイン語や英語で単語を書いた場合、日本語に翻訳
+    5. 適応応答: 正しい → ✅ 褒める + 例
+    
+    常に日本語で応答。`
+        };
+        
+        const systemPrompt = systemPrompts[language] || systemPrompts.English;
+    
         try {
             console.log(`[ENVIO] Enviando a Groq en ${language}:`, userText);
             
@@ -332,7 +393,7 @@ ${idiomaInstruccion}
                     max_tokens: 600
                 })
             });
-
+    
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('[ERROR] HTTP:', response.status, errorText);
@@ -344,25 +405,26 @@ ${idiomaInstruccion}
                 }
                 
                 if (response.status === 429) {
-                    return language === 'Spanish' 
-                        ? '⏳ Límite de solicitudes. Espera 30 segundos.'
-                        : '⏳ Rate limit reached. Wait 30 seconds.';
+                    const mensajes = {
+                        Spanish: '⏳ Límite de solicitudes. Espera 30 segundos.',
+                        English: '⏳ Rate limit reached. Wait 30 seconds.',
+                        French: '⏳ Limite de requêtes. Attends 30 secondes.',
+                        German: '⏳ Ratengrenze erreicht. Warte 30 Sekunden.',
+                        Italian: '⏳ Limite di richieste. Aspetta 30 secondi.',
+                        Japanese: '⏳ リクエスト制限に達しました。30秒待ってください。'
+                    };
+                    return mensajes[language] || mensajes.English;
                 }
                 
                 return this.getOfflineResponse(userText, language);
             }
-
+    
             const data = await response.json();
-            let reply = data.choices[0].message.content;
+            const reply = data.choices[0].message.content;
             
-            const hasSpanish = /[áéíóúñ¿¡]/i.test(reply);
-            if (language === 'English' && hasSpanish) {
-                reply = '⚠️ [English Response Required]\n\nI must respond in English. Please try again.';
-            }
-            
-            console.log('[OK] Respuesta recibida');
+            console.log(`[OK] Respuesta en ${language} recibida`);
             return reply;
-
+    
         } catch (error) {
             console.error('[ERROR] Envio fallido:', error);
             return this.getOfflineResponse(userText, language);
@@ -370,11 +432,15 @@ ${idiomaInstruccion}
     }
 
     getOfflineResponse(text, language) {
-        if (language === 'Spanish') {
-            return `⚠️ **Modo demostración**\n\nPara usar la IA completa:\n\n1️⃣ Ve a console.groq.com\n2️⃣ Regístrate (gratis)\n3️⃣ Crea una API Key\n4️⃣ Ve al menú ☰ → 🔑\n\n📝 Tu mensaje: "${text}"\n\n🚀 ¡Es gratis!`;
-        } else {
-            return `⚠️ **Demo Mode**\n\nTo use the full AI tutor:\n\n1️⃣ Go to console.groq.com\n2️⃣ Sign up (free)\n3️⃣ Create an API Key\n4️⃣ Go to menu ☰ → 🔑\n\n📝 Your message: "${text}"\n\n🚀 It's free!`;
-        }
+        const messages = {
+            Spanish: `⚠️ **Modo demostración**\n\nPara usar la IA completa:\n\n1️⃣ Ve a console.groq.com\n2️⃣ Regístrate (gratis)\n3️⃣ Crea una API Key\n4️⃣ Ve al menú ☰ → 🔑\n\n📝 Tu mensaje: "${text}"\n\n🚀 ¡Es gratis!`,
+            English: `⚠️ **Demo Mode**\n\nTo use the full AI tutor:\n\n1️⃣ Go to console.groq.com\n2️⃣ Sign up (free)\n3️⃣ Create an API Key\n4️⃣ Go to menu ☰ → 🔑\n\n📝 Your message: "${text}"\n\n🚀 It's free!`,
+            French: `⚠️ **Mode Démo**\n\nPour utiliser l'IA complète:\n\n1️⃣ Va à console.groq.com\n2️⃣ Inscris-toi (gratuit)\n3️⃣ Crée une clé API\n4️⃣ Va au menu ☰ → 🔑\n\n📝 Ton message: "${text}"\n\n🚀 C'est gratuit!`,
+            German: `⚠️ **Demo-Modus**\n\nUm die vollständige KI zu nutzen:\n\n1️⃣ Gehe zu console.groq.com\n2️⃣ Registriere dich (kostenlos)\n3️⃣ Erstelle einen API-Schlüssel\n4️⃣ Gehe zum Menü ☰ → 🔑\n\n📝 Deine Nachricht: "${text}"\n\n🚀 Es ist kostenlos!`,
+            Italian: `⚠️ **Modalità Demo**\n\nPer utilizzare l'IA completa:\n\n1️⃣ Vai su console.groq.com\n2️⃣ Registrati (gratuito)\n3️⃣ Crea una chiave API\n4️⃣ Vai al menu ☰ → 🔑\n\n📝 Il tuo messaggio: "${text}"\n\n🚀 È gratuito!`,
+            Japanese: `⚠️ **デモモード**\n\n完全なAIチューターを使用するには:\n\n1️⃣ console.groq.comにアクセス\n2️⃣ 無料登録\n3️⃣ APIキーを作成\n4️⃣ メニュー ☰ → 🔑 から設定\n\n📝 あなたのメッセージ: "${text}"\n\n🚀 無料です！`
+        };
+        return messages[language] || messages.English;
     }
 
     async sendMessage(userText, language) {
