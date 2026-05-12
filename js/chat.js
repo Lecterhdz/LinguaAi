@@ -203,66 +203,76 @@ class LinguaAIChat {
         }
     }
 
-    // ========== TUTORA IA CON PROMPT COMPLETO ==========
+    // ========== TUTORA IA CON PROMPT COMPLETO - CORREGIDO ==========
     async sendToGroq(userText, language) {
         if (!this.GROQ_API_KEY) {
             return this.getOfflineResponse(userText, language);
         }
-
+    
         const systemPrompt = `Eres LinguaAI, una tutora profesional de idiomas con voz femenina.
-
-ROL: Tutora experta, paciente y motivadora
-IDIOMA ACTUAL: ${language}
-
-REGLAS OBLIGATORIAS:
-
-1. CORRECCION DE ERRORES:
-   - Detecta TODOS los errores gramaticales y ortograficos
-   - Muestra: [ROJO] "frase_incorrecta" -> [VERDE] "frase_correcta"
-   - Explica POR QUE esta mal con la regla gramatical
-
-2. EJEMPLOS:
-   - Siempre da 2-3 ejemplos
-   - [LIBRO] Ejemplo 1: [contexto diferente]
-   - [LIBRO] Ejemplo 2: [contexto diferente]
-
-3. CONVERSACION NATURAL:
-   - Manten la conversacion fluida como un amigo
-   - Haz preguntas de seguimiento para que el estudiante practique
-   - No respondas con "si" o "no" solos, explica siempre
-
-4. ESTRUCTURA DE RESPUESTA:
-   =================================
-   [LAPIZ] CORRECCION:
-   "frase_original" -> "frase_correcta"
-   
-   [BOMBILLA] EXPLICACION:
-   [regla gramatical clara y concisa]
-   
-   [LIBRO] EJEMPLOS:
-   1. [ejemplo relevante 1]
-   2. [ejemplo relevante 2]
-   
-   [BLANCO] AHORA PRACTICA:
-   [pregunta o ejercicio corto]
-   =================================
-
-5. RESPUESTAS ADAPTATIVAS:
-   - Si el estudiante escribio CORRECTO: [CHECK] Felicita y da ejemplos adicionales
-   - Si el estudiante PREGUNTA algo: Responde con claridad + ejemplos
-   - Si el estudiante PIDE ejercicios: Propone 2-3 ejercicios interactivos
-   - Si el estudiante escribe "ejercicio" o "practicar": Genera un ejercicio especifico
-
-6. TONO Y ESTILO:
-   - Usa emojis como: [LAPIZ] [BOMBILLA] [LIBRO] [BLANCO] [CHECK] [ROJO] [VERDE]
-   - Se entusiasta y motivadora
-   - Manten respuestas de 3-5 oraciones
-
-RESPONDE EN ${language}
-COMIENZA TU RESPUESTA AHORA`;
-
+    
+    ROL: Tutora experta, paciente y motivadora
+    IDIOMA ACTUAL: ${language}
+    
+    REGLAS OBLIGATORIAS:
+    
+    1. CORRECCION DE ERRORES:
+       - Detecta TODOS los errores gramaticales y ortograficos
+       - Muestra: "frase_incorrecta" -> "frase_correcta"
+       - Explica POR QUE esta mal con la regla gramatical
+    
+    2. EJEMPLOS:
+       - Siempre da 2-3 ejemplos
+       - Ejemplo 1: [contexto diferente]
+       - Ejemplo 2: [contexto diferente]
+    
+    3. CONVERSACION NATURAL:
+       - Manten la conversacion fluida como un amigo
+       - Haz preguntas de seguimiento para que el estudiante practique
+       - No respondas con "si" o "no" solos, explica siempre
+    
+    4. ESTRUCTURA DE RESPUESTA:
+       =================================
+       [CORRECCION]
+       "frase_original" -> "frase_correcta"
+       
+       [EXPLICACION]
+       [regla gramatical clara y concisa]
+       
+       [EJEMPLOS]
+       1. [ejemplo relevante 1]
+       2. [ejemplo relevante 2]
+       
+       [PRACTICA]
+       [pregunta o ejercicio corto]
+       =================================
+    
+    5. RESPUESTAS ADAPTATIVAS:
+       - Si el estudiante escribio CORRECTO: Felicita y da ejemplos adicionales
+       - Si el estudiante PREGUNTA algo: Responde con claridad + ejemplos
+       - Si el estudiante PIDE ejercicios: Propone 2-3 ejercicios interactivos
+       - Si el estudiante escribe "ejercicio" o "practicar": Genera un ejercicio especifico
+    
+    6. TONO Y ESTILO:
+       - Se entusiasta y motivadora
+       - Manten respuestas de 3-5 oraciones
+    
+    RESPONDE EN ${language}
+    COMIENZA TU RESPUESTA AHORA`;
+    
         try {
             console.log('[ENVIO] Enviando a Groq:', userText);
+            
+            // IMPORTANTE: Filtrar los mensajes para enviar SOLO role y content
+            const historialParaGroq = this.messages
+                .filter(msg => msg.role !== 'system') // Excluir mensajes del sistema
+                .slice(-10) // Solo últimos 10 mensajes
+                .map(msg => ({
+                    role: msg.role === 'ai' ? 'assistant' : msg.role, // 'ai' -> 'assistant'
+                    content: msg.content
+                }));
+            
+            console.log('[HISTORIAL] Enviando', historialParaGroq.length, 'mensajes de contexto');
             
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
@@ -274,14 +284,14 @@ COMIENZA TU RESPUESTA AHORA`;
                     model: 'llama-3.1-8b-instant',
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        ...this.messages.slice(-10),
+                        ...historialParaGroq,
                         { role: 'user', content: userText }
                     ],
                     temperature: 0.7,
                     max_tokens: 600
                 })
             });
-
+    
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('[ERROR] HTTP:', response.status, errorText);
@@ -289,21 +299,21 @@ COMIENZA TU RESPUESTA AHORA`;
                 if (response.status === 401) {
                     localStorage.removeItem('groq_api_key');
                     this.GROQ_API_KEY = null;
-                    return `[ERROR] API Key invalida\n\nVe a console.groq.com y genera una nueva key.`;
+                    return `[ERROR] API Key invalida. Ve a console.groq.com y genera una nueva key.`;
                 }
                 
                 if (response.status === 429) {
-                    return `[RELOJ] Espera un momento\n\nDemasiadas solicitudes. Espera 30 segundos.`;
+                    return `[RELOJ] Espera un momento. Demasiadas solicitudes. Espera 30 segundos.`;
                 }
                 
                 return this.getOfflineResponse(userText, language);
             }
-
+    
             const data = await response.json();
             const reply = data.choices[0].message.content;
             console.log('[OK] Respuesta recibida');
             return reply;
-
+    
         } catch (error) {
             console.error('[ERROR] Envio fallido:', error);
             return this.getOfflineResponse(userText, language);
@@ -437,10 +447,17 @@ COMIENZA TU RESPUESTA AHORA`;
         messagesDiv.appendChild(messageDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
         
+        // Guardar en historial - SIN timestamp para evitar errores con Groq
         if (role !== 'system') {
-            this.messages.push({ role, content, timestamp: Date.now() });
+            this.messages.push({ 
+                role: role === 'ai' ? 'ai' : role, 
+                content: content 
+                // NO incluir timestamp
+            });
         }
         if (this.messages.length > 50) this.messages = this.messages.slice(-50);
+        // Guardar en localStorage con timestamp (solo para persistencia)
+        this.saveHistory();
     }
 
     async speak(text, language) {
@@ -468,16 +485,27 @@ COMIENZA TU RESPUESTA AHORA`;
     saveHistory() {
         const user = window.auth?.getCurrentUser();
         if (user && this.messages.length) {
-            localStorage.setItem(`chat_history_${user.license}`, JSON.stringify(this.messages.slice(-50)));
+            // Guardar con timestamp SOLO para localStorage, no para Groq
+            const historyToSave = this.messages.map(msg => ({
+                role: msg.role,
+                content: msg.content,
+                timestamp: Date.now() // Solo para mostrar en UI después
+            }));
+            localStorage.setItem(`chat_history_${user.license}`, JSON.stringify(historyToSave.slice(-50)));
         }
     }
-
+    
     loadHistory() {
         const user = window.auth?.getCurrentUser();
         if (user) {
             const history = localStorage.getItem(`chat_history_${user.license}`);
             if (history) {
-                this.messages = JSON.parse(history);
+                const loadedMessages = JSON.parse(history);
+                this.messages = loadedMessages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                    // No incluir timestamp en los mensajes activos
+                }));
                 this.messages.slice(-20).forEach(msg => {
                     if (msg.role !== 'system') this.addMessage(msg.role, msg.content);
                 });
